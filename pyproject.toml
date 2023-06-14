@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "nikescraper"
+version = "0.1.0"
+description = "Nike Scraper Tools"
+authors = ["perymerdeka <tkjasikk@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+beautifulsoup4 = "^4.12.2"
+httpx = "^0.24.1"
+black = "^23.3.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
