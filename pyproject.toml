@@ -11,6 +11,7 @@ python = "^3.8"
 beautifulsoup4 = "^4.12.2"
 httpx = "^0.24.1"
 black = "^23.3.0"
+loguru = "^0.7.0"
 
 
 [build-system]
