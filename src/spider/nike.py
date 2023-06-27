@@ -19,7 +19,7 @@ class NikeSpider(FileHelper):
         self.ensure_directory_exists(cfg.TEMP_DIR)
 
 
-    def get_page(self):
+    def get_page(self) -> Optional[list[dict[str, Any]]]:
         params: dict[str, Any] = {
             "q": self.keyword,
             "vst": self.keyword
@@ -39,9 +39,31 @@ class NikeSpider(FileHelper):
 
         #  scraping process
         if response.status_code == 200:
+            results: list[dict[str, Any]] = []
             soup: BeautifulSoup = BeautifulSoup(response.text, 'html.parser')
 
+            product_grid = soup.find("div", attrs={"id": "skip-to-products"})
+
+            products = product_grid.find_all("div", attrs={"data-testid": "product-card"})
             
+            for product in products:
+                link: str = product.find("a", attrs={"class": "product-card__link-overlay"})['href']
+                name = product.find("div", attrs={"class": "product-card__title", "role": "link"}).text.strip()
+                category = product.find("div", attrs={"class": "product-card__subtitle", "role": "link"}).text.strip()
+                available_color = product.find("div", attrs={"class": "product-card__product-count"}).text.strip()
+                price = product.find("div", attrs={"data-testid": "product-price", "role": "link"}).text.strip()
+                
+                data_dict: dict[str, Any] = {
+                    "product name": name,
+                    "product link": link,
+                    "category": category,
+                    "available color": available_color,
+                    "price": price
+                }
+
+                results.append(data_dict)
+            
+            return results
 
         else:
             logger.debug(f"Returned Status Code {response.status_code} writing log file")

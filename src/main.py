@@ -1,3 +1,5 @@
 from spider.config import Config as cfg
+from spider.cli import app
 
-print(cfg.BASE_DIR)
+if __name__ == '__main__':
+    app()

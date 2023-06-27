@@ -20,7 +20,13 @@ class FileHelper(object):
             logger.info(f"Directory already exists: {path}")
 
     def writetmpfile(self, file_name: str, data: Union[str, bytes]) -> None:
-        with open(file_name, "wb" if isinstance(data, bytes) else "w") as file:
+        """write temporary file
+
+        Args:
+            file_name (str): _description_
+            data (Union[str, bytes]): _description_
+        """
+        with open(file_name, "wb" if isinstance(data, bytes) else "w", encoding='UTF-8') as file:
             file.write(data)
 
 class HttpHelper(object):
