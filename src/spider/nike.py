@@ -18,6 +18,11 @@ class NikeSpider(FileHelper):
         self.ensure_directory_exists(cfg.LOGDIR)
         self.ensure_directory_exists(cfg.TEMP_DIR)
 
+        # headers
+        self.headers: dict[str, Any] = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+        }
+
 
     def get_page(self) -> Optional[list[dict[str, Any]]]:
         params: dict[str, Any] = {
@@ -26,12 +31,9 @@ class NikeSpider(FileHelper):
         }
 
         # headers
-        headers: dict[str, Any] = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
-        }
 
         url: str = f"{self.base_url}/{self.locale}/w"
-        response = self.client.get(url, params=params, headers=headers)
+        response = self.client.get(url, params=params, headers=self.headers)
 
         # write tmp file for checking
         self.writetmpfile(join(cfg.TEMP_DIR, 'response.html'), data=response.text)
@@ -68,6 +70,17 @@ class NikeSpider(FileHelper):
         else:
             logger.debug(f"Returned Status Code {response.status_code} writing log file")
             self.writetmpfile(join(cfg.TEMP_DIR, f"{response.status_code}.html"))
-            
+    
+    def get_detail_product(self, product_url: str):
+        response = self.client.get(product_url, headers=self.headers)
+
+        self.writetmpfile(join(cfg.TEMP_DIR, 'product_detail.html'), data=response.text)
+
+        if response.status_code == 200:
+            soup: BeautifulSoup = BeautifulSoup(response.text, 'html.parser')
+
+
+
+
 
 

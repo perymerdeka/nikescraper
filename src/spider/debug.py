@@ -38,3 +38,24 @@ class NikeSpiderDebug(object):
             
             return results
 
+    def get_product_detail(self):
+        with open(join(cfg.TEMP_DIR, "product_detail.html"), 'r+', encoding="UTF-8") as files:
+            source: str = files.read()
+            
+            #  scraping process
+            soup: BeautifulSoup = BeautifulSoup(source, 'html.parser')
+            container = soup.find("div", attrs={'class': "app-root"})
+
+            # get items form json
+            json_script = soup.find("script", attrs={"type":"application/ld+json"})
+            print(json_script)
+
+            
+            photos = container.find("div", attrs={"id": "pdp-6-up"}).find_all("img", attrs={"style": "object-fit:contain;opacity:", "id": "pdp_6up-hero"})
+            photo_list: list[str] = []
+            for photo in photos:
+                if photo['alt'] != "Low Resolution":
+                    pictures = photo['src']
+                    photo_list.append(pictures)
+            
+
