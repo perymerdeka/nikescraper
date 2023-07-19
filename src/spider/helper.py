@@ -1,5 +1,7 @@
 # helper for Nikespider configuration
 
+import json
+
 from os.path import exists
 from os import makedirs
 from loguru import logger
@@ -28,6 +30,12 @@ class FileHelper(object):
         """
         with open(file_name, "wb" if isinstance(data, bytes) else "w", encoding='UTF-8') as file:
             file.write(data)
+    
+    def javascript_to_json(self, javascript: str) -> dict:
+        text = javascript.replace('<script type="application/ld+json">', "").replace("</script>", "")
+        json_data = json.loads(text)
+
+        return json_data
 
 class HttpHelper(object):
     def rotator(self):

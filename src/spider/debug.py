@@ -4,8 +4,9 @@ from bs4 import BeautifulSoup
 from typing import Any
 
 from spider.config import Config as cfg
+from spider.helper import FileHelper
 
-class NikeSpiderDebug(object):
+class NikeSpiderDebug(FileHelper):
     
     def get_from_page(self) -> list[dict[str, Any]]:
         results: list[dict[str, Any]] = []
@@ -42,14 +43,26 @@ class NikeSpiderDebug(object):
         with open(join(cfg.TEMP_DIR, "product_detail.html"), 'r+', encoding="UTF-8") as files:
             source: str = files.read()
             
+            # data_dict: dict[str, Any] = {}
             #  scraping process
             soup: BeautifulSoup = BeautifulSoup(source, 'html.parser')
             container = soup.find("div", attrs={'class': "app-root"})
 
             # get items form json
             json_script = soup.find("script", attrs={"type":"application/ld+json"})
-            print(json_script)
+            datas = self.javascript_to_json(json_script.text.strip())
+            print(type(datas))
+            
+            # extract data
+            for key, value in datas.items():
+                print("Ini Key: ", key, "Ini Value: ", value)
 
+                # formatting
+                data_dict: dict[str, Any] = {
+                    "name": datas['name'],
+                    "model": datas['model']
+                }
+                print(data_dict)
             
             photos = container.find("div", attrs={"id": "pdp-6-up"}).find_all("img", attrs={"style": "object-fit:contain;opacity:", "id": "pdp_6up-hero"})
             photo_list: list[str] = []
