@@ -1,0 +1,2 @@
+class Debug(object):
+    pass
