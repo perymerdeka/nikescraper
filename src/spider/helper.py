@@ -5,9 +5,9 @@ import json
 from os.path import exists
 from os import makedirs
 from loguru import logger
-from typing import Union
+from typing import Union, Any
 
-class FileHelper(object):
+class Formatter(object):
 
     def ensure_directory_exists(self, path: str):
         """function to check directory os exist or not
@@ -36,6 +36,22 @@ class FileHelper(object):
         json_data = json.loads(text)
 
         return json_data
+    
+    def remove_duplicate(self, datas: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        seen = set()
+        output_list = []
+        for item in datas:
+            json_item = json.dumps(item, sort_keys=True)
+            if json_item not in seen:
+                seen.add(json_item)
+                output_list.append(item)
+        return output_list
+    
+    def list_to_dict(self, datas: list[dict[str, Any]]) -> dict[str, Any]:
+        result_dict: dict[str, Any] = {}
+        for item in datas:
+            result_dict.update(item)
+        return result_dict
 
 class HttpHelper(object):
     def rotator(self):

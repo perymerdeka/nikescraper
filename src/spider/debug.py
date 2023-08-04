@@ -4,71 +4,94 @@ from bs4 import BeautifulSoup
 from typing import Any
 
 from spider.config import Config as cfg
-from spider.helper import FileHelper
+from spider.helper import Formatter
 
-class NikeSpiderDebug(FileHelper):
-    
+
+class NikeSpiderDebug(Formatter):
     def get_from_page(self) -> list[dict[str, Any]]:
         results: list[dict[str, Any]] = []
-        with open(join(cfg.TEMP_DIR, "response.html"), 'r+', encoding="UTF-8") as files:
+        with open(join(cfg.TEMP_DIR, "response.html"), "r+", encoding="UTF-8") as files:
             source: str = files.read()
-            
+
             #  scraping process
-            soup: BeautifulSoup = BeautifulSoup(source, 'html.parser')
+            soup: BeautifulSoup = BeautifulSoup(source, "html.parser")
 
             product_grid = soup.find("div", attrs={"id": "skip-to-products"})
 
-            products = product_grid.find_all("div", attrs={"data-testid": "product-card"})
-            
+            products = product_grid.find_all(
+                "div", attrs={"data-testid": "product-card"}
+            )
+
             for product in products:
-                link: str = product.find("a", attrs={"class": "product-card__link-overlay"})['href']
-                name = product.find("div", attrs={"class": "product-card__title", "role": "link"}).text.strip()
-                category = product.find("div", attrs={"class": "product-card__subtitle", "role": "link"}).text.strip()
-                available_color = product.find("div", attrs={"class": "product-card__product-count"}).text.strip()
-                price = product.find("div", attrs={"data-testid": "product-price", "role": "link"}).text.strip()
-                
+                link: str = product.find(
+                    "a", attrs={"class": "product-card__link-overlay"}
+                )["href"]
+                name = product.find(
+                    "div", attrs={"class": "product-card__title", "role": "link"}
+                ).text.strip()
+                category = product.find(
+                    "div", attrs={"class": "product-card__subtitle", "role": "link"}
+                ).text.strip()
+                available_color = product.find(
+                    "div", attrs={"class": "product-card__product-count"}
+                ).text.strip()
+                price = product.find(
+                    "div", attrs={"data-testid": "product-price", "role": "link"}
+                ).text.strip()
+
                 data_dict: dict[str, Any] = {
                     "product name": name,
                     "product link": link,
                     "category": category,
                     "available color": available_color,
-                    "price": price
+                    "price": price,
                 }
 
                 results.append(data_dict)
-            
+
             return results
 
     def get_product_detail(self):
-        with open(join(cfg.TEMP_DIR, "product_detail.html"), 'r+', encoding="UTF-8") as files:
+        with open(
+            join(cfg.TEMP_DIR, "product_detail.html"), "r+", encoding="UTF-8"
+        ) as files:
             source: str = files.read()
-            
+
             # data_dict: dict[str, Any] = {}
             #  scraping process
-            soup: BeautifulSoup = BeautifulSoup(source, 'html.parser')
-            container = soup.find("div", attrs={'class': "app-root"})
+            soup: BeautifulSoup = BeautifulSoup(source, "html.parser")
+            container = soup.find("div", attrs={"class": "app-root"})
 
             # get items form json
-            json_script = soup.find("script", attrs={"type":"application/ld+json"})
+            json_script = soup.find("script", attrs={"type": "application/ld+json"})
             datas = self.javascript_to_json(json_script.text.strip())
-            print(type(datas))
-            
+
             # extract data
-            for key, value in datas.items():
-                print("Ini Key: ", key, "Ini Value: ", value)
+            results: list[dict[str, Any]] = []
+            for _ in datas.items():
+                # print("Ini Key: ", key, "Ini Value: ", value)
+
+                name = datas["name"]
+                brand = datas["brand"]["name"]
+                price = datas["offers"]["price"]
+                seller = datas["offers"]["seller"]["name"]
+                sku = datas["sku"]
+                image = datas["image"]
+                release = datas["releaseDate"]
 
                 # formatting
                 data_dict: dict[str, Any] = {
-                    "name": datas['name'],
-                    "model": datas['model']
+                    "name": name,
+                    "brand": brand,
+                    "price": price,
+                    "seller": seller,
+                    "sku": sku,
+                    "image": image,
+                    "release": release,
                 }
-                print(data_dict)
-            
-            photos = container.find("div", attrs={"id": "pdp-6-up"}).find_all("img", attrs={"style": "object-fit:contain;opacity:", "id": "pdp_6up-hero"})
-            photo_list: list[str] = []
-            for photo in photos:
-                if photo['alt'] != "Low Resolution":
-                    pictures = photo['src']
-                    photo_list.append(pictures)
-            
+                # append data
+                results.append(data_dict)
 
+            # process the data
+            results = self.remove_duplicate(datas=results)
+            return self.list_to_dict(results)

@@ -5,9 +5,9 @@ from os.path import join
 from loguru import logger
 
 from spider.config import Config as cfg
-from spider.helper import FileHelper
+from spider.helper import Formatter
 
-class NikeSpider(FileHelper):
+class NikeSpider(Formatter):
     def __init__(self, keyword: str,  locale: Optional[str]="id") -> None:
         self.base_url: str = "https://www.nike.com"
         self.locale = locale
@@ -71,6 +71,7 @@ class NikeSpider(FileHelper):
             logger.debug(f"Returned Status Code {response.status_code} writing log file")
             self.writetmpfile(join(cfg.TEMP_DIR, f"{response.status_code}.html"))
     
+    
     def get_detail_product(self, product_url: str):
         response = self.client.get(product_url, headers=self.headers)
 
@@ -78,6 +79,39 @@ class NikeSpider(FileHelper):
 
         if response.status_code == 200:
             soup: BeautifulSoup = BeautifulSoup(response.text, 'html.parser')
+
+            json_script = soup.find("script", attrs={"type": "application/ld+json"})
+            datas = self.javascript_to_json(json_script.text.strip())
+
+            # extract data
+            results: list[dict[str, Any]] = []
+            for _ in datas.items():
+                # print("Ini Key: ", key, "Ini Value: ", value)
+
+                name = datas["name"]
+                brand = datas["brand"]["name"]
+                price = datas["offers"]["price"]
+                seller = datas["offers"]["seller"]["name"]
+                sku = datas["sku"]
+                image = datas["image"]
+                release = datas["releaseDate"]
+
+                # formatting
+                data_dict: dict[str, Any] = {
+                    "name": name,
+                    "brand": brand,
+                    "price": price,
+                    "seller": seller,
+                    "sku": sku,
+                    "image": image,
+                    "release": release,
+                }
+                # append data
+                results.append(data_dict)
+
+            # process the data
+            results = self.remove_duplicate(datas=results)
+            return self.list_to_dict(results)
 
 
 
