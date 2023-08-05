@@ -52,6 +52,10 @@ class Formatter(object):
         for item in datas:
             result_dict.update(item)
         return result_dict
+    
+    def save_url(datas: list[dict[str, Any]]):
+        for data in datas:
+            pass
 
 class HttpHelper(object):
     def rotator(self):

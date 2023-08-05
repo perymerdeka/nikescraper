@@ -36,3 +36,9 @@ def get_product_detail(
     else:
         spider: NikeSpider = NikeSpider(keyword="")
         spider.get_detail_product(product_url=url)
+
+@app.command(name="scrape", help="running scraper in synchronous mode")
+def scrape():
+    keyword: str = prompt("Search Product")
+    spider: NikeSpider = NikeSpider(keyword=keyword)
+    spider.scrape()

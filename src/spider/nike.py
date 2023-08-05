@@ -24,7 +24,7 @@ class NikeSpider(Formatter):
         }
 
 
-    def get_page(self) -> Optional[list[dict[str, Any]]]:
+    def get_page(self, save: Optional[bool]=True) -> Optional[list[dict[str, Any]]]:
         params: dict[str, Any] = {
             "q": self.keyword,
             "vst": self.keyword
@@ -53,18 +53,18 @@ class NikeSpider(Formatter):
                 name = product.find("div", attrs={"class": "product-card__title", "role": "link"}).text.strip()
                 category = product.find("div", attrs={"class": "product-card__subtitle", "role": "link"}).text.strip()
                 available_color = product.find("div", attrs={"class": "product-card__product-count"}).text.strip()
-                price = product.find("div", attrs={"data-testid": "product-price", "role": "link"}).text.strip()
                 
                 data_dict: dict[str, Any] = {
                     "product name": name,
                     "product link": link,
                     "category": category,
                     "available color": available_color,
-                    "price": price
                 }
 
                 results.append(data_dict)
             
+            # action to save product url 
+
             return results
 
         else:
@@ -73,7 +73,9 @@ class NikeSpider(Formatter):
     
     
     def get_detail_product(self, product_url: str):
+       
         response = self.client.get(product_url, headers=self.headers)
+        logger.info("Process URL: {} with Status Code: {}".format(product_url, response.status_code))
 
         self.writetmpfile(join(cfg.TEMP_DIR, 'product_detail.html'), data=response.text)
 
@@ -112,9 +114,23 @@ class NikeSpider(Formatter):
             # process the data
             results = self.remove_duplicate(datas=results)
             return self.list_to_dict(results)
+        
+    def scrape(self):
+        results: list[dict[str, Any]] = []
+        pages = self.get_page()
+        
+        # process loop page
+        for index, page in enumerate(pages):
+            logger.info("Process data {} of {} URL {}".format(index, len(pages), page['url']))
+            detail = self.get_detail_product(product_url=page['url'])
+            product = {**page, **detail}
+            results.append(product)
 
+        # process the data
+        return results
+    
+    def manual(self, start: int):
+        pages = self.get_page()
 
-
-
-
-
+        # setup manual 
+        pages = pages[start:len(pages)]
