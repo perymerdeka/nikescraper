@@ -2,10 +2,12 @@
 
 import json
 
-from os.path import exists
+from os.path import exists, join
 from os import makedirs
 from loguru import logger
 from typing import Union, Any
+
+from spider.config import Config as cfg
 
 class Formatter(object):
 
@@ -53,9 +55,17 @@ class Formatter(object):
             result_dict.update(item)
         return result_dict
     
-    def save_url(datas: list[dict[str, Any]]):
-        for data in datas:
-            pass
+    def save_url(self, datas: list[dict[str, Any]]):
+        logger.info("Save URL to Local file")
+        urls: list[str] = []
+        for url in datas:
+            if url.get("product link") is not None:
+                urls.append(url['product link'])
+            
+        with open(join(cfg.TEMP_DIR, 'urls.json'), 'w+') as urls_file:
+            json.dump(urls, urls_file)
+            
+        logger.info("URL Saved on {}".format(join(cfg.TEMP_DIR, 'urls.json')))
 
 class HttpHelper(object):
     def rotator(self):

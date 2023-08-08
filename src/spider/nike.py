@@ -7,8 +7,9 @@ from loguru import logger
 from spider.config import Config as cfg
 from spider.helper import Formatter
 
+
 class NikeSpider(Formatter):
-    def __init__(self, keyword: str,  locale: Optional[str]="id") -> None:
+    def __init__(self, keyword: str, locale: Optional[str] = "id") -> None:
         self.base_url: str = "https://www.nike.com"
         self.locale = locale
         self.keyword = keyword
@@ -23,12 +24,8 @@ class NikeSpider(Formatter):
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
         }
 
-
-    def get_page(self, save: Optional[bool]=True) -> Optional[list[dict[str, Any]]]:
-        params: dict[str, Any] = {
-            "q": self.keyword,
-            "vst": self.keyword
-        }
+    def get_page(self, save: Optional[bool] = True) -> Optional[list[dict[str, Any]]]:
+        params: dict[str, Any] = {"q": self.keyword, "vst": self.keyword}
 
         # headers
 
@@ -36,24 +33,33 @@ class NikeSpider(Formatter):
         response = self.client.get(url, params=params, headers=self.headers)
 
         # write tmp file for checking
-        self.writetmpfile(join(cfg.TEMP_DIR, 'response.html'), data=response.text)
-
+        self.writetmpfile(join(cfg.TEMP_DIR, "response.html"), data=response.text)
 
         #  scraping process
         if response.status_code == 200:
             results: list[dict[str, Any]] = []
-            soup: BeautifulSoup = BeautifulSoup(response.text, 'html.parser')
+            soup: BeautifulSoup = BeautifulSoup(response.text, "html.parser")
 
             product_grid = soup.find("div", attrs={"id": "skip-to-products"})
 
-            products = product_grid.find_all("div", attrs={"data-testid": "product-card"})
-            
+            products = product_grid.find_all(
+                "div", attrs={"data-testid": "product-card"}
+            )
+
             for product in products:
-                link: str = product.find("a", attrs={"class": "product-card__link-overlay"})['href']
-                name = product.find("div", attrs={"class": "product-card__title", "role": "link"}).text.strip()
-                category = product.find("div", attrs={"class": "product-card__subtitle", "role": "link"}).text.strip()
-                available_color = product.find("div", attrs={"class": "product-card__product-count"}).text.strip()
-                
+                link: str = product.find(
+                    "a", attrs={"class": "product-card__link-overlay"}
+                )["href"]
+                name = product.find(
+                    "div", attrs={"class": "product-card__title", "role": "link"}
+                ).text.strip()
+                category = product.find(
+                    "div", attrs={"class": "product-card__subtitle", "role": "link"}
+                ).text.strip()
+                available_color = product.find(
+                    "div", attrs={"class": "product-card__product-count"}
+                ).text.strip()
+
                 data_dict: dict[str, Any] = {
                     "product name": name,
                     "product link": link,
@@ -62,25 +68,31 @@ class NikeSpider(Formatter):
                 }
 
                 results.append(data_dict)
-            
-            # action to save product url 
+
+            # action to save product url
+            if save:
+                self.save_url(datas=results)
 
             return results
 
         else:
-            logger.debug(f"Returned Status Code {response.status_code} writing log file")
+            logger.debug(
+                f"Returned Status Code {response.status_code} writing log file"
+            )
             self.writetmpfile(join(cfg.TEMP_DIR, f"{response.status_code}.html"))
-    
-    
-    def get_detail_product(self, product_url: str):
-       
-        response = self.client.get(product_url, headers=self.headers)
-        logger.info("Process URL: {} with Status Code: {}".format(product_url, response.status_code))
 
-        self.writetmpfile(join(cfg.TEMP_DIR, 'product_detail.html'), data=response.text)
+    def get_detail_product(self, product_url: str):
+        response = self.client.get(product_url, headers=self.headers)
+        logger.info(
+            "Process URL: {} with Status Code: {}".format(
+                product_url, response.status_code
+            )
+        )
+
+        self.writetmpfile(join(cfg.TEMP_DIR, "product_detail.html"), data=response.text)
 
         if response.status_code == 200:
-            soup: BeautifulSoup = BeautifulSoup(response.text, 'html.parser')
+            soup: BeautifulSoup = BeautifulSoup(response.text, "html.parser")
 
             json_script = soup.find("script", attrs={"type": "application/ld+json"})
             datas = self.javascript_to_json(json_script.text.strip())
@@ -114,23 +126,37 @@ class NikeSpider(Formatter):
             # process the data
             results = self.remove_duplicate(datas=results)
             return self.list_to_dict(results)
-        
+
     def scrape(self):
         results: list[dict[str, Any]] = []
         pages = self.get_page()
-        
+
         # process loop page
         for index, page in enumerate(pages):
-            logger.info("Process data {} of {} URL {}".format(index, len(pages), page['url']))
-            detail = self.get_detail_product(product_url=page['url'])
+            logger.info(
+                "Process data {} of {} URL {}".format(index, len(pages), page["url"])
+            )
+            detail = self.get_detail_product(product_url=page["url"])
             product = {**page, **detail}
             results.append(product)
 
         # process the data
         return results
-    
+
     def manual(self, start: int):
+        results: list[dict[str, Any]] = []
         pages = self.get_page()
 
-        # setup manual 
-        pages = pages[start:len(pages)]
+        # setup manual
+        pages = pages[start : len(pages)]
+
+        for index, page in enumerate(pages):
+            logger.info(
+                "Process data {} of {} URL {}".format(index, len(pages), page["url"])
+            )
+            detail = self.get_detail_product(product_url=page["url"])
+            product = {**page, **detail}
+            results.append(product)
+
+        # process the data
+        return results
