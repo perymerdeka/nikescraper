@@ -1,3 +1,5 @@
+import httpx
+
 from typing import Optional, Any
 from httpx import Client
 from bs4 import BeautifulSoup
@@ -94,6 +96,7 @@ class NikeSpider(Formatter):
         if response.status_code == 200:
             soup: BeautifulSoup = BeautifulSoup(response.text, "html.parser")
 
+            
             json_script = soup.find("script", attrs={"type": "application/ld+json"})
             datas = self.javascript_to_json(json_script.text.strip())
 
@@ -104,8 +107,14 @@ class NikeSpider(Formatter):
 
                 name = datas["name"]
                 brand = datas["brand"]["name"]
-                price = datas["offers"]["price"]
-                seller = datas["offers"]["seller"]["name"]
+                try:
+                    price = datas["offers"]["price"]
+                except:
+                    price = datas["offers"]['highPrice']
+                try:
+                    seller = datas["offers"]["seller"]["name"]
+                except:
+                    seller =  datas['seller']
                 sku = datas["sku"]
                 image = datas["image"]
                 release = datas["releaseDate"]
@@ -119,6 +128,52 @@ class NikeSpider(Formatter):
                     "sku": sku,
                     "image": image,
                     "release": release,
+                    
+                }
+                # append data
+                results.append(data_dict)
+
+            # process the data
+            results = self.remove_duplicate(datas=results)
+            return self.list_to_dict(results)
+
+        elif response.status_code == 302:
+            logger.info(f"Response: {response.status_code} Using redirect mode")
+            response = httpx.get(product_url, headers=self.headers, follow_redirects=True)
+
+            soup: BeautifulSoup = BeautifulSoup(response.text, "html.parser")
+            json_script = soup.find("script", attrs={"type": "application/ld+json"})
+            datas = self.javascript_to_json(json_script.text.strip())
+
+            # extract data
+            results: list[dict[str, Any]] = []
+            for _ in datas.items():
+                # print("Ini Key: ", key, "Ini Value: ", value)
+
+                name = datas["name"]
+                brand = datas["brand"]["name"]
+                try:
+                    price = datas["offers"]["price"]
+                except:
+                    price = datas["offers"]['highPrice']
+                try:
+                    seller = datas["offers"]["seller"]["name"]
+                except:
+                    seller =  datas['seller']
+                sku = datas["sku"]
+                image = datas["image"]
+                release = datas["releaseDate"]
+
+                # formatting
+                data_dict: dict[str, Any] = {
+                    "name": name,
+                    "brand": brand,
+                    "price": price,
+                    "seller": seller,
+                    "sku": sku,
+                    "image": image,
+                    "release": release,
+                    
                 }
                 # append data
                 results.append(data_dict)
@@ -134,11 +189,11 @@ class NikeSpider(Formatter):
         # process loop page
         for index, page in enumerate(pages):
             logger.info(
-                "Process data {} of {} URL {}".format(index, len(pages), page["url"])
+                "Process data {} of {} URL {}".format(index, len(pages), page["product link"])
             )
-            detail = self.get_detail_product(product_url=page["url"])
+            detail = self.get_detail_product(product_url=page["product link"])
             product = {**page, **detail}
-            results.append(product)
+            # results.append(product)
 
         # process the data
         return results
